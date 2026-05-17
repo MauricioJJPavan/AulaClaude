@@ -83,14 +83,35 @@ else:
         data = pd.concat(data_frames, ignore_index=True)
         data = data.sort_values(["Ticker", "Date"])
 
+        # Retorno acumulado para todas as ações (usado no gráfico comparativo)
+        all_returns = []
+        for ticker in data["Ticker"].unique():
+            t_data = data[data["Ticker"] == ticker].copy()
+            t_data["Retorno Acumulado (%)"] = (
+                t_data["Close"] / t_data["Close"].iloc[0] - 1) * 100
+            all_returns.append(t_data)
+        data = pd.concat(all_returns, ignore_index=True)
+
+        st.subheader("Comparação: Retorno Acumulado das 3 Ações")
+        compare_fig = px.line(
+            data,
+            x="Date",
+            y="Retorno Acumulado (%)",
+            color="Ticker",
+            title="Retorno Acumulado Comparado — PETR4, ITUB4 e VALE3",
+            labels={"Retorno Acumulado (%)": "Retorno acumulado (%)", "Date": "Data"},
+        )
+        compare_fig.update_layout(legend_title_text="Ação")
+        st.plotly_chart(compare_fig, use_container_width=True)
+
+        st.divider()
+        st.subheader(f"Análise individual: {selected_ticker}")
+
         selected_data = data[data["Ticker"] == selected_ticker].copy()
         if selected_data.empty:
             st.warning(f"Não há dados disponíveis para {selected_ticker}.")
         else:
-            selected_data["Retorno Diário (%)"] = selected_data["Close"].pct_change(
-            ) * 100
-            selected_data["Retorno Acumulado (%)"] = (
-                selected_data["Close"] / selected_data["Close"].iloc[0] - 1) * 100
+            selected_data["Retorno Diário (%)"] = selected_data["Close"].pct_change() * 100
 
             last_close = float(selected_data["Close"].iloc[-1])
             max_close = float(selected_data["Close"].max())
